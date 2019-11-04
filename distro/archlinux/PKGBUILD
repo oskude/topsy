@@ -1,0 +1,27 @@
+pkgname=topsy
+pkgver=0.0.1
+pkgrel=1
+pkgdesc="Blah blah, yada yada"
+arch=('i686' 'x86_64')
+url="https://github.com/oskude/topsy"
+depends=(
+	'libxcb'
+	'xcb-util-wm'
+	'cairo'
+)
+source=(
+	"git+file:///$(readlink -f ../..)/"
+)
+md5sums=(
+	'SKIP'
+)
+
+build() {
+	cd "$pkgname"
+	make
+}
+
+package() {
+	cd "$pkgname"
+	make PREFIX=/usr DESTDIR="$pkgdir/" install
+}
