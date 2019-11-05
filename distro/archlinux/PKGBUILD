@@ -1,5 +1,5 @@
 pkgname=topsy
-pkgver=0.0.1
+pkgver=0.0.2
 pkgrel=1
 pkgdesc="Blah blah, yada yada"
 arch=('i686' 'x86_64')
@@ -8,6 +8,9 @@ depends=(
 	'libxcb'
 	'xcb-util-wm'
 	'cairo'
+)
+backup=(
+	'etc/xdg/topsy.conf'
 )
 source=(
 	"git+file:///$(readlink -f ../..)/"
@@ -24,4 +27,5 @@ build() {
 package() {
 	cd "$pkgname"
 	make PREFIX=/usr DESTDIR="$pkgdir/" install
+	install -Dm644 "$srcdir/topsy/example.conf" "$pkgdir/etc/xdg/topsy.conf"
 }

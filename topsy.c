@@ -223,6 +223,47 @@ void handle_events ()
 	}
 }
 
+struct Color parse_hex_color (char *hex) {
+	int dec_r, dec_g, dec_b, dec_a = 255;
+
+	sscanf(hex, "%2x%2x%2x%2x", &dec_r, &dec_g, &dec_b, &dec_a);
+	struct Color color = {
+		dec_r / 255.0,
+		dec_g / 255.0,
+		dec_b / 255.0,
+		dec_a / 255.0
+	};
+
+	return color;
+}
+
+void load_config (char *path) {
+	FILE *file;
+	char name[32];
+	char val[32];
+
+	file = fopen(path, "r");
+	if (file == NULL) {
+		return;
+	}
+	while (fscanf(file, "%s %s\n", name, val) != EOF) {
+		if (strcmp(name, "color_back") == 0)
+			color_back = parse_hex_color(val);
+		else if (strcmp(name, "color_cpu_used") == 0)
+			color_cpu_used = parse_hex_color(val);
+		else if (strcmp(name, "color_cpu_fade") == 0)
+			color_cpu_fade = parse_hex_color(val);
+		else if (strcmp(name, "color_mem_back") == 0)
+			color_mem_back = parse_hex_color(val);
+		else if (strcmp(name, "color_mem_used") == 0)
+			color_mem_used = parse_hex_color(val);
+		else if (strcmp(name, "color_mem_cached") == 0)
+			color_mem_cached = parse_hex_color(val);
+	}
+
+	fclose(file);
+}
+
 void cleanup () {
 	printf("::cleanup\n");
 
@@ -235,6 +276,10 @@ void cleanup () {
 int main (int argc, char **argv) {
 	signal(SIGINT, cleanup);
 	signal(SIGTERM, cleanup);
+
+	// TODO: read from XDG_CONFIG_DIRS XDG_CONFIG_HOME
+	if (access("/etc/xdg/topsy.conf", R_OK) != -1)
+		load_config("/etc/xdg/topsy.conf");
 
 	Top_File = fopen("/proc/topstat", "r");
 	create_window();
