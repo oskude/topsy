@@ -18,12 +18,12 @@ int Window_Width = 64;
 int Bar_Height   = 10;
 int Bar_Gap      = 1;
 
-struct Color color_back       = {0.0, 0.0, 0.0, 1.0};
-struct Color color_cpu_used   = {0.0, 1.0, 0.0, 0.2};
-struct Color color_cpu_fade   = {0.0, 0.0, 0.0, 0.2};
-struct Color color_mem_back   = {0.0, 0.0, 0.0, 0.0};
-struct Color color_mem_used   = {0.09, 0.373, 0.651, 1.0};
-struct Color color_mem_cached = {0.07, 0.286, 0.502, 1.0};
+struct Color Color_Back       = {0.0, 0.0, 0.0, 1.0};
+struct Color Color_Cpu_Used   = {0.0, 1.0, 0.0, 0.2};
+struct Color Color_Cpu_Fade   = {0.0, 0.0, 0.0, 0.2};
+struct Color Color_Mem_Back   = {0.0, 0.0, 0.0, 0.0};
+struct Color Color_Mem_Used   = {0.09, 0.373, 0.651, 1.0};
+struct Color Color_Mem_Cached = {0.07, 0.286, 0.502, 1.0};
 
 int Window_Height;
 int Next_Bar_Ypos;
@@ -119,7 +119,7 @@ void set_cairo_color (struct Color *color) {
 void redraw () {
 	Mem_Used_Width = 0;
 	// fill background
-	set_cairo_color(&color_back);
+	set_cairo_color(&Color_Back);
 	cairo_rectangle(Cairo_Ctx, 0, 0, Window_Width, Window_Height);
 	cairo_fill(Cairo_Ctx);
 }
@@ -152,11 +152,11 @@ void draw_topbars () {
 			cpu_usage /= (float) (jiff_total - jiff_total_list[cpu_nr]);
 
 			// draw fader
-			set_cairo_color(&color_cpu_fade);
+			set_cairo_color(&Color_Cpu_Fade);
 			cairo_rectangle(Cairo_Ctx, 0, Next_Bar_Ypos, Window_Width, Bar_Height);
 			cairo_fill(Cairo_Ctx);
 			// draw bar
-			set_cairo_color(&color_cpu_used);
+			set_cairo_color(&Color_Cpu_Used);
 			cairo_rectangle(Cairo_Ctx, 0, Next_Bar_Ypos, Window_Width * cpu_usage, Bar_Height);
 			cairo_fill(Cairo_Ctx);
 
@@ -184,15 +184,15 @@ void draw_topbars () {
 			Mem_Cached_Width = mem_cached_width;
 
 			// draw background
-			set_cairo_color(&color_mem_back);
+			set_cairo_color(&Color_Mem_Back);
 			cairo_rectangle(Cairo_Ctx, 0, Next_Bar_Ypos, Window_Width, Bar_Height);
 			cairo_fill(Cairo_Ctx);
 			// draw used
-			set_cairo_color(&color_mem_used);
+			set_cairo_color(&Color_Mem_Used);
 			cairo_rectangle(Cairo_Ctx, 0, Next_Bar_Ypos, mem_used_width, Bar_Height);
 			cairo_fill(Cairo_Ctx);
 			// draw cached
-			set_cairo_color(&color_mem_cached);
+			set_cairo_color(&Color_Mem_Cached);
 			cairo_rectangle(Cairo_Ctx,
 				mem_used_width - mem_cached_width,
 				Next_Bar_Ypos, 
@@ -248,17 +248,17 @@ void load_config (char *path) {
 	}
 	while (fscanf(file, "%s %s\n", name, val) != EOF) {
 		if (strcmp(name, "color_back") == 0)
-			color_back = parse_hex_color(val);
+			Color_Back = parse_hex_color(val);
 		else if (strcmp(name, "color_cpu_used") == 0)
-			color_cpu_used = parse_hex_color(val);
+			Color_Cpu_Used = parse_hex_color(val);
 		else if (strcmp(name, "color_cpu_fade") == 0)
-			color_cpu_fade = parse_hex_color(val);
+			Color_Cpu_Fade = parse_hex_color(val);
 		else if (strcmp(name, "color_mem_back") == 0)
-			color_mem_back = parse_hex_color(val);
+			Color_Mem_Back = parse_hex_color(val);
 		else if (strcmp(name, "color_mem_used") == 0)
-			color_mem_used = parse_hex_color(val);
+			Color_Mem_Used = parse_hex_color(val);
 		else if (strcmp(name, "color_mem_cached") == 0)
-			color_mem_cached = parse_hex_color(val);
+			Color_Mem_Cached = parse_hex_color(val);
 	}
 
 	fclose(file);
