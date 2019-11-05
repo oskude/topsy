@@ -7,9 +7,23 @@
 #include <xcb/xcb_ewmh.h>
 #include <xcb/xcb_icccm.h>
 
+struct Color {
+	double r;
+	double g;
+	double b;
+	double a;
+};
+
 int Window_Width = 64;
 int Bar_Height   = 10;
 int Bar_Gap      = 1;
+
+struct Color color_back       = {0.0, 0.0, 0.0, 1.0};
+struct Color color_cpu_used   = {0.0, 1.0, 0.0, 0.2};
+struct Color color_cpu_fade   = {0.0, 0.0, 0.0, 0.2};
+struct Color color_mem_back   = {0.0, 0.0, 0.0, 0.0};
+struct Color color_mem_used   = {0.09, 0.373, 0.651, 1.0};
+struct Color color_mem_cached = {0.07, 0.286, 0.502, 1.0};
 
 int Window_Height;
 int Next_Bar_Ypos;
@@ -19,14 +33,6 @@ int Mem_Used_Width;
 xcb_connection_t *Xcb_Conn;
 cairo_t         *Cairo_Ctx;
 FILE             *Top_File;
-
-void redraw () {
-	Mem_Used_Width = 0;
-	// fill background
-	cairo_set_source_rgb(Cairo_Ctx, 0, 0, 0);
-	cairo_rectangle(Cairo_Ctx, 0, 0, Window_Width, Window_Height);
-	cairo_fill(Cairo_Ctx);
-}
 
 void create_window () {
 	                Xcb_Conn = xcb_connect(NULL, NULL);
@@ -101,6 +107,23 @@ void create_window () {
 	xcb_flush(Xcb_Conn);
 }
 
+void set_cairo_color (struct Color *color) {
+	cairo_set_source_rgba(Cairo_Ctx,
+		color->r,
+		color->g,
+		color->b,
+		color->a
+	);
+}
+
+void redraw () {
+	Mem_Used_Width = 0;
+	// fill background
+	set_cairo_color(&color_back);
+	cairo_rectangle(Cairo_Ctx, 0, 0, Window_Width, Window_Height);
+	cairo_fill(Cairo_Ctx);
+}
+
 void draw_topbars () {
 	static char  line[128];
 	static char *field;
@@ -129,11 +152,11 @@ void draw_topbars () {
 			cpu_usage /= (float) (jiff_total - jiff_total_list[cpu_nr]);
 
 			// draw fader
-			cairo_set_source_rgba(Cairo_Ctx, 0, 0, 0, 0.2);
+			set_cairo_color(&color_cpu_fade);
 			cairo_rectangle(Cairo_Ctx, 0, Next_Bar_Ypos, Window_Width, Bar_Height);
 			cairo_fill(Cairo_Ctx);
 			// draw bar
-			cairo_set_source_rgba(Cairo_Ctx, 0, 1, 0, 0.2);
+			set_cairo_color(&color_cpu_used);
 			cairo_rectangle(Cairo_Ctx, 0, Next_Bar_Ypos, Window_Width * cpu_usage, Bar_Height);
 			cairo_fill(Cairo_Ctx);
 
@@ -161,15 +184,15 @@ void draw_topbars () {
 			Mem_Cached_Width = mem_cached_width;
 
 			// draw background
-			cairo_set_source_rgb(Cairo_Ctx, 0, 0, 0);
+			set_cairo_color(&color_mem_back);
 			cairo_rectangle(Cairo_Ctx, 0, Next_Bar_Ypos, Window_Width, Bar_Height);
 			cairo_fill(Cairo_Ctx);
 			// draw used
-			cairo_set_source_rgb(Cairo_Ctx, 0.09, 0.373, 0.651);
+			set_cairo_color(&color_mem_used);
 			cairo_rectangle(Cairo_Ctx, 0, Next_Bar_Ypos, mem_used_width, Bar_Height);
 			cairo_fill(Cairo_Ctx);
 			// draw cached
-			cairo_set_source_rgb(Cairo_Ctx, 0.071, 0.286, 0.502);
+			set_cairo_color(&color_mem_cached);
 			cairo_rectangle(Cairo_Ctx,
 				mem_used_width - mem_cached_width,
 				Next_Bar_Ypos, 
