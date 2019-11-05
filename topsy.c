@@ -14,9 +14,10 @@ struct Color {
 	double a;
 };
 
-int Window_Width = 64;
-int Bar_Height   = 10;
-int Bar_Gap      = 1;
+int Update_Interval = 250;
+int Window_Width    = 64;
+int Bar_Height      = 10;
+int Bar_Gap         = 1;
 
 struct Color Color_Back       = {0.0, 0.0, 0.0, 1.0};
 struct Color Color_Cpu_Used   = {0.0, 1.0, 0.0, 0.2};
@@ -247,7 +248,15 @@ void load_config (char *path) {
 		return;
 	}
 	while (fscanf(file, "%s %s\n", name, val) != EOF) {
-		if (strcmp(name, "color_back") == 0)
+		if (strcmp(name, "update_interval") == 0)
+			Update_Interval = atoi(val);
+		else if (strcmp(name, "window_width") == 0)
+			Window_Width = atoi(val);
+		else if (strcmp(name, "bar_height") == 0)
+			Bar_Height = atoi(val);
+		else if (strcmp(name, "bar_gap") == 0)
+			Bar_Gap = atoi(val);
+		else if (strcmp(name, "color_back") == 0)
 			Color_Back = parse_hex_color(val);
 		else if (strcmp(name, "color_cpu_used") == 0)
 			Color_Cpu_Used = parse_hex_color(val);
@@ -288,7 +297,7 @@ int main (int argc, char **argv) {
 		Next_Bar_Ypos = 0;
 		handle_events();
 		draw_topbars();
-		usleep(1000 * 250);
+		usleep(1000 * Update_Interval);
 	}
 
 	return 0;
