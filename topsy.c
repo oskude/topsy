@@ -7,25 +7,37 @@
 #include <xcb/xcb_ewmh.h>
 #include <xcb/xcb_icccm.h>
 
-int Window_Width  = 64;
-int Bar_Height    = 10;
-int Bar_Gap       = 1;
-int Next_Bar_Ypos = 0;
+int Window_Width = 64;
+int Bar_Height   = 10;
+int Bar_Gap      = 1;
+
+int Window_Height;
+int Next_Bar_Ypos;
+int Mem_Cached_Width;
+int Mem_Used_Width;
 
 xcb_connection_t *Xcb_Conn;
 cairo_t         *Cairo_Ctx;
 FILE             *Top_File;
+
+void redraw () {
+	Mem_Used_Width = 0;
+	// fill background
+	cairo_set_source_rgb(Cairo_Ctx, 0, 0, 0);
+	cairo_rectangle(Cairo_Ctx, 0, 0, Window_Width, Window_Height);
+	cairo_fill(Cairo_Ctx);
+}
 
 void create_window () {
 	                Xcb_Conn = xcb_connect(NULL, NULL);
 	const xcb_setup_t *setup = xcb_get_setup(Xcb_Conn);
 	xcb_screen_t     *screen = xcb_setup_roots_iterator(setup).data;
 	xcb_window_t      window = xcb_generate_id(Xcb_Conn);
-	int        window_height = 0;
+	const int    mask_vals[] = { XCB_EVENT_MASK_EXPOSURE };
 
 	// calculate our height
-	window_height += (Bar_Height + Bar_Gap) * get_nprocs_conf();
-	window_height += Bar_Height;
+	Window_Height += (Bar_Height + Bar_Gap) * get_nprocs_conf();
+	Window_Height += Bar_Height;
 
 	// create window with default settings
 	xcb_create_window(
@@ -34,12 +46,12 @@ void create_window () {
 		window,
 		screen->root,
 		0, 0, // x,y
-		Window_Width, window_height,
+		Window_Width, Window_Height,
 		0, // border width
 		XCB_WINDOW_CLASS_INPUT_OUTPUT, // TODO: what does this do?
 		screen->root_visual,
-		XCB_CW_BACK_PIXEL,
-		&screen->black_pixel
+		XCB_CW_EVENT_MASK,
+		mask_vals
 	);
 
 	// change window name
@@ -82,14 +94,9 @@ void create_window () {
 		window,
 		xcb_depth_visuals(depth.data),
 		Window_Width,
-		window_height
+		Window_Height
 	);
 	Cairo_Ctx = cairo_create(surface);
-
-	// fill background
-	cairo_set_source_rgb(Cairo_Ctx, 0, 0, 0);
-	cairo_rectangle(Cairo_Ctx, 0, 0, Window_Width, window_height);
-	cairo_fill(Cairo_Ctx);
 
 	xcb_flush(Xcb_Conn);
 }
@@ -103,11 +110,9 @@ void draw_topbars () {
 	static int   jiff_total;
 	static int   jiff_used_list[64];
 	static int   jiff_used;
-	static int   mem_cached_width_prev = 0;
 	static int   mem_cached_width;
 	static int   mem_cached;
 	static int   mem_total;
-	static int   mem_used_width_prev = 0;
 	static int   mem_used_width;
 	static int   mem_used;
 
@@ -146,14 +151,14 @@ void draw_topbars () {
 			mem_cached_width = mem_used_width * ( (float)mem_cached / (float)mem_used );
 
 			if (
-				mem_used_width_prev == mem_used_width
-				&& mem_cached_width_prev == mem_cached_width
+				Mem_Used_Width == mem_used_width
+				&& Mem_Cached_Width == mem_cached_width
 			) {
 				continue;
 			}
 
-			mem_used_width_prev = mem_used_width;
-			mem_cached_width_prev = mem_cached_width;
+			Mem_Used_Width = mem_used_width;
+			Mem_Cached_Width = mem_cached_width;
 
 			// draw background
 			cairo_set_source_rgb(Cairo_Ctx, 0, 0, 0);
@@ -180,6 +185,21 @@ void draw_topbars () {
 	xcb_flush(Xcb_Conn); // without this, nothing is drawn.
 }
 
+void handle_events ()
+{
+	static xcb_generic_event_t *event;
+
+	event = xcb_poll_for_event(Xcb_Conn);
+
+	if (event == NULL) {
+		return;
+	}
+
+	if (event->response_type == XCB_EXPOSE) {
+		redraw();
+	}
+}
+
 void cleanup () {
 	printf("::cleanup\n");
 
@@ -198,6 +218,7 @@ int main (int argc, char **argv) {
 
 	while (1) {
 		Next_Bar_Ypos = 0;
+		handle_events();
 		draw_topbars();
 		usleep(1000 * 250);
 	}
